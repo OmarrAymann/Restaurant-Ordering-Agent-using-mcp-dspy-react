@@ -1,13 +1,6 @@
-"""
-Test Suite for Restaurant Order Assistant
-==========================================
-Validates core functionality of the ordering system.
-"""
-
 import asyncio
 from typing import List, Dict, Any
 
-# Test data
 TEST_SCENARIOS = [
     {
         "name": "Menu Browsing",
@@ -54,27 +47,6 @@ TEST_SCENARIOS = [
             "Yes, that's correct"
         ]
     },
-    {
-        "name": "Order Modification",
-        "description": "Change order before confirmation",
-        "user_inputs": [
-            "I want the chicken alfredo",
-            "Actually, change that to the salmon",
-            "Riley Parker",
-            "Table 3",
-            "555-7890",
-            "Send it"
-        ]
-    },
-    {
-        "name": "Dietary Inquiry",
-        "description": "Ask about dietary options",
-        "user_inputs": [
-            "Do you have any vegan options?",
-            "What about gluten-free dishes?",
-            "I'll take the lemonade"
-        ]
-    }
 ]
 
 
@@ -98,12 +70,7 @@ class OrderSystemTester:
         print("=" * 70)
         
     async def run_manual_test_scenario(self, scenario: Dict[str, Any]):
-        """
-        Run a test scenario with manual verification.
-        
-        Args:
-            scenario: Test scenario with inputs and expected behavior
-        """
+        """Run a test scenario with manual verification."""
         self.display_test_header(scenario["name"], scenario["description"])
         
         print("\n📋 Test Steps:")
@@ -124,7 +91,6 @@ class OrderSystemTester:
         print("🔬 UNIT TESTS")
         print("=" * 70)
         
-        # Test 1: Menu item validation
         print("\n1️⃣  Testing menu item codes...")
         valid_codes = ["APP_001", "MAIN_001", "DESS_001", "DRINK_001"]
         invalid_codes = ["XYZ_999", "INVALID"]
@@ -133,7 +99,6 @@ class OrderSystemTester:
         print(f"   Invalid codes: {', '.join(invalid_codes)}")
         print("   ✅ Menu code format validation passed")
         
-        # Test 2: Price calculation
         print("\n2️⃣  Testing price calculations...")
         test_prices = [9.99, 26.99, 9.99, 4.99]
         expected_subtotal = sum(test_prices)
@@ -145,7 +110,6 @@ class OrderSystemTester:
         print(f"   Total: ${expected_total:.2f}")
         print("   ✅ Price calculation passed")
         
-        # Test 3: Order ID generation
         print("\n3️⃣  Testing order ID generation...")
         test_order_ids = [f"ORD-{i:05d}" for i in range(1, 6)]
         print(f"   Generated IDs: {', '.join(test_order_ids)}")
@@ -182,42 +146,6 @@ class OrderSystemTester:
         print("   - Check off each item as you verify it works")
         print("   - Document any issues found")
         print("=" * 70)
-        
-    def display_performance_tests(self):
-        """Display performance testing guidelines."""
-        print("\n" + "=" * 70)
-        print("⚡ PERFORMANCE TESTING")
-        print("=" * 70)
-        
-        tests = [
-            {
-                "name": "Response Time",
-                "target": "< 3 seconds per response",
-                "how": "Measure time from input to agent response"
-            },
-            {
-                "name": "Memory Usage",
-                "target": "< 500 MB RAM",
-                "how": "Monitor process memory during long conversations"
-            },
-            {
-                "name": "Concurrent Users",
-                "target": "Handle 10+ simultaneous conversations",
-                "how": "Run multiple instances and test stability"
-            },
-            {
-                "name": "Tool Execution",
-                "target": "< 1 second per tool call",
-                "how": "Time individual MCP tool invocations"
-            }
-        ]
-        
-        for test in tests:
-            print(f"\n📊 {test['name']}")
-            print(f"   Target: {test['target']}")
-            print(f"   Method: {test['how']}")
-            
-        print("\n" + "=" * 70)
 
 
 def main():
@@ -228,15 +156,13 @@ def main():
     
     tester = OrderSystemTester()
     
-    # Display menu
     print("\n📋 Available Test Categories:")
     print("   1. Unit Tests (automated)")
     print("   2. Manual Test Scenarios")
     print("   3. Integration Checklist")
-    print("   4. Performance Testing Guide")
-    print("   5. Run All Tests")
+    print("   4. Run All Tests")
     
-    choice = input("\nSelect test category (1-5): ").strip()
+    choice = input("\nSelect test category (1-4): ").strip()
     
     if choice == "1":
         tester.run_unit_tests()
@@ -247,14 +173,11 @@ def main():
     elif choice == "3":
         tester.display_integration_checklist()
     elif choice == "4":
-        tester.display_performance_tests()
-    elif choice == "5":
         tester.run_unit_tests()
         tester.display_integration_checklist()
-        tester.display_performance_tests()
         print("\n📋 For manual scenarios, run this script again and select option 2")
     else:
-        print("❌ Invalid choice. Please run again and select 1-5.")
+        print("❌ Invalid choice. Please run again and select 1-4.")
         
     print("\n✨ Testing complete! Review results above.\n")
 

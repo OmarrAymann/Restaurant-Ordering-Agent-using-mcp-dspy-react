@@ -1,7 +1,6 @@
 import asyncio
 import os
 from typing import List, Optional, Literal
-from pathlib import Path
 
 import dspy
 import dotenv
@@ -9,23 +8,13 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from pydantic import BaseModel, Field
 
-
-# ============================================================================
-# Configuration & Setup
-# ============================================================================
-
 dotenv.load_dotenv()
 
-# API Configuration
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY not found in environment variables")
-
-# Language Model Configuration
+# Language Model Configuration - Ollama Llama 3.2
 language_model = dspy.LM(
-    model="gemini/gemini-2.5-flash",
-    api_key=GEMINI_API_KEY,
-    temperature=0.7  # Balanced between creativity and consistency
+    model="ollama/llama3.2:latest",
+    api_base="http://localhost:11434",
+    temperature=0.7
 )
 dspy.configure(lm=language_model)
 
@@ -37,24 +26,17 @@ mcp_server_parameters = StdioServerParameters(
 )
 
 
-# ============================================================================
-# Data Models
-# ============================================================================
-
 class CustomerOrderDetails(BaseModel):
-    """
-    Comprehensive structure containing all customer order information.
-    This model ensures type safety and validation for order data.
-    """
+    """Comprehensive structure containing all customer order information."""
     
     ordered_items: List[str] = Field(
         default_factory=list,
-        description="List of menu item IDs or names the customer wishes to order (e.g., ['main_001', 'drink_002'])"
+        description="List of menu item IDs or names the customer wishes to order"
     )
     
     customization_requests: List[str] = Field(
         default_factory=list,
-        description="Special modifications or dietary requirements (e.g., 'no pickles', 'extra sauce', 'gluten-free')"
+        description="Special modifications or dietary requirements"
     )
     
     customer_full_name: Optional[str] = Field(
@@ -64,56 +46,22 @@ class CustomerOrderDetails(BaseModel):
     
     service_location: Optional[str] = Field(
         default=None,
-        description="Table number, room number, or delivery address (e.g., 'Table 12', 'Room 305')"
+        description="Table number, room number, or delivery address"
     )
     
     contact_number: Optional[str] = Field(
         default=None,
-        description="Customer's phone number for order updates and delivery coordination"
+        description="Customer's phone number for order updates"
     )
     
     email_address: Optional[str] = Field(
         default=None,
-        description="Customer's email for order confirmation and receipts"
-    )
-
-
-class ConversationState(BaseModel):
-    """
-    Represents the current state of the conversation flow.
-    Helps track where the customer is in the ordering process.
-    """
-    
-    current_phase: Literal[
-        'INITIAL_GREETING',
-        'BROWSING_MENU', 
-        'TAKING_ORDER',
-        'MODIFYING_ORDER',
-        'COLLECTING_CUSTOMER_INFO',
-        'ORDER_CONFIRMATION',
-        'ORDER_CANCELLATION',
-        'ORDER_FINALIZED',
-        'PROVIDING_ASSISTANCE'
-    ] = Field(
-        description="Current phase of the customer interaction"
-    )
-    
-    requires_user_confirmation: bool = Field(
-        default=False,
-        description="Flag indicating if agent is waiting for customer confirmation"
-    )
-    
-    missing_information: List[str] = Field(
-        default_factory=list,
-        description="List of required information still needed (e.g., ['name', 'table_number'])"
+        description="Customer's email for order confirmation"
     )
 
 
 class AgentResponseOutput(BaseModel):
-    """
-    Complete output structure for a single conversational turn.
-    Includes response text, state management, order data, and tool execution info.
-    """
+    """Complete output structure for a single conversational turn."""
     
     agent_message: str = Field(
         description="Natural, friendly response to be displayed to the customer"
@@ -124,28 +72,24 @@ class AgentResponseOutput(BaseModel):
     )
     
     order_details: CustomerOrderDetails = Field(
-        description="Updated order information with all current items and preferences"
+        description="Updated order information with all current items"
     )
     
     tools_to_execute: List[str] = Field(
         default_factory=list,
-        description="List of MCP tool functions to invoke (e.g., ['fetch_menu', 'create_order'])"
+        description="List of MCP tool functions to invoke"
     )
     
     needs_confirmation: bool = Field(
         default=False,
-        description="Whether the agent needs explicit customer confirmation before proceeding"
+        description="Whether the agent needs explicit customer confirmation"
     )
     
     order_summary: Optional[str] = Field(
         default=None,
-        description="Formatted summary of the current order for confirmation"
+        description="Formatted summary of the current order"
     )
 
-
-# ============================================================================
-# DSPy Signature
-# ============================================================================
 
 class RestaurantConversationalAgent(dspy.Signature):
     """
@@ -174,23 +118,16 @@ class RestaurantConversationalAgent(dspy.Signature):
     )
     
     conversation_history: str = dspy.InputField(
-        desc="Complete chat history for context and continuity (formatted as 'Speaker: message' pairs)"
+        desc="Complete chat history for context and continuity"
     )
     
     agent_response: AgentResponseOutput = dspy.OutputField(
-        desc="Structured output containing response text, updated state, order data, and actions to take"
+        desc="Structured output containing response text, updated state, and order data"
     )
 
 
-# ============================================================================
-# Main Application Logic
-# ============================================================================
-
 class RestaurantChatbotSession:
-    """
-    Manages a complete chatbot session including conversation history,
-    state management, and tool coordination.
-    """
+    """Manages a complete chatbot session including conversation history and state."""
     
     def __init__(self, agent_instance, max_history_turns: int = 15):
         self.agent = agent_instance
@@ -208,15 +145,7 @@ class RestaurantChatbotSession:
         return "\n".join(recent_turns)
     
     async def process_user_message(self, user_message: str) -> AgentResponseOutput:
-        """
-        Process a user message and generate an appropriate response.
-        
-        Args:
-            user_message: The customer's input text
-            
-        Returns:
-            AgentResponseOutput with response and metadata
-        """
+        """Process a user message and generate an appropriate response."""
         self.add_to_history("Customer", user_message)
         
         result = await self.agent.acall(
@@ -227,24 +156,18 @@ class RestaurantChatbotSession:
         response_output = result.agent_response
         self.add_to_history("Agent", response_output.agent_message)
         
-        # Update current order state
         self.current_order = response_output.order_details
         
         return response_output
 
 
 async def initialize_and_run_chatbot():
-    """
-    Main entry point for the restaurant chatbot.
-    Initializes MCP connection, sets up the agent, and runs the conversation loop.
-    """
+    """Main entry point for the restaurant chatbot."""
     
     async with stdio_client(mcp_server_parameters) as (input_stream, output_stream):
         async with ClientSession(input_stream, output_stream) as mcp_session:
-            # Initialize MCP session
             await mcp_session.initialize()
 
-            # Retrieve available MCP tools
             available_tools = await mcp_session.list_tools()
             dspy_compatible_tools = [
                 dspy.Tool.from_mcp_tool(mcp_session, tool) 
@@ -252,11 +175,10 @@ async def initialize_and_run_chatbot():
             ]
 
             if not dspy_compatible_tools:
-                print("⚠️  Warning: No MCP tools detected. Some features may be unavailable.")
+                print("⚠️  Warning: No MCP tools detected.")
             else:
                 print(f"✓ Loaded {len(dspy_compatible_tools)} MCP tools")
 
-            # Display welcome banner
             print("\n" + "=" * 60)
             print("🍽️  RESTAURANT ORDER ASSISTANT")
             print("=" * 60)
@@ -264,37 +186,28 @@ async def initialize_and_run_chatbot():
             print("Type 'quit', 'exit', or 'bye' to end the conversation.")
             print("=" * 60 + "\n")
 
-            # Initialize agent with ReAct reasoning
             conversational_agent = dspy.ReAct(
                 RestaurantConversationalAgent, 
                 tools=dspy_compatible_tools
             )
             
-            # Create session manager
             chat_session = RestaurantChatbotSession(conversational_agent)
 
-            # Main conversation loop
             while True:
                 try:
-                    # Get user input
                     customer_input = input("You: ").strip()
 
-                    # Check for exit commands
                     if customer_input.lower() in ['quit', 'exit', 'bye', 'goodbye']:
                         print("\n🙏 Thank you for visiting! Have a wonderful day!\n")
                         break
 
-                    # Skip empty inputs
                     if not customer_input:
                         continue
 
-                    # Process the message
                     response_data = await chat_session.process_user_message(customer_input)
                     
-                    # Display agent response
                     print(f"\n🤖 Agent: {response_data.agent_message}\n")
                     
-                    # Show order summary if available (useful for debugging/confirmation)
                     if response_data.order_summary:
                         print(f"📋 Order Summary:\n{response_data.order_summary}\n")
 
@@ -306,10 +219,6 @@ async def initialize_and_run_chatbot():
                     print(f"\n❌ Error occurred: {error}")
                     print("Please try rephrasing your request.\n")
 
-
-# ============================================================================
-# Application Entry Point
-# ============================================================================
 
 if __name__ == "__main__":
     print("🚀 Starting Restaurant Order Assistant...")

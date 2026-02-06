@@ -1,10 +1,3 @@
-"""
-Enhanced Restaurant MCP Server
-================================
-Provides MCP tools for menu management, order processing, and kitchen communication.
-Includes email notifications and Excel-based order tracking.
-"""
-
 import os
 import smtplib
 from datetime import datetime
@@ -13,45 +6,35 @@ from email.mime.multipart import MIMEMultipart
 from typing import List, Optional, Dict, Any
 
 import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.styles import Font, PatternFill, Alignment
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field
-
-# ============================================================================
-# Configuration
-# ============================================================================
 
 load_dotenv()
 
 restaurant_service = FastMCP("RestaurantOrderingService")
 
-# Email Configuration
 SENDER_EMAIL = os.getenv("SENDER_EMAIL")
 SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
-DEFAULT_CHEF_EMAIL = os.getenv("CHEF_EMAIL", "saragamilmohamed@gmail.com")
+DEFAULT_CHEF_EMAIL = os.getenv("CHEF_EMAIL", "chef@restaurant.com")
 
-# File Configuration
 ORDERS_EXCEL_FILE = "restaurant_orders_log.xlsx"
-TAX_RATE = 0.10  # 10% tax rate
+TAX_RATE = 0.10
 
-
-# ============================================================================
-# Data Models
-# ============================================================================
 
 class MenuItemModel(BaseModel):
     """Represents a single item on the restaurant menu."""
     
     item_code: str = Field(description="Unique identifier for the menu item")
     dish_name: str = Field(description="Display name of the dish")
-    category_type: str = Field(description="Menu category (appetizer, main, dessert, drink)")
+    category_type: str = Field(description="Menu category")
     detailed_description: str = Field(description="Detailed description of the dish")
     base_price: float = Field(description="Price in USD")
     ingredient_list: List[str] = Field(description="List of primary ingredients")
-    dietary_labels: List[str] = Field(description="Dietary tags (vegan, gluten-free, etc.)")
+    dietary_labels: List[str] = Field(description="Dietary tags")
     is_available: bool = Field(description="Current availability status")
-    prep_time_minutes: int = Field(description="Estimated preparation time in minutes")
+    prep_time_minutes: int = Field(description="Estimated preparation time")
     popularity_rating: int = Field(description="Popularity score (1-10)")
 
 
@@ -88,17 +71,12 @@ class CompleteOrder(BaseModel):
     order_status: str = Field(description="Current order status")
 
 
-# ============================================================================
-# Menu Database
-# ============================================================================
-
 RESTAURANT_MENU_DATABASE: Dict[str, MenuItemModel] = {
-    # Appetizers
     "APP_001": MenuItemModel(
         item_code="APP_001",
         dish_name="Mediterranean Bruschetta",
         category_type="appetizer",
-        detailed_description="Artisan sourdough topped with heirloom tomatoes, fresh basil, garlic confit, and aged balsamic",
+        detailed_description="Artisan sourdough topped with heirloom tomatoes, fresh basil, and aged balsamic",
         base_price=9.99,
         ingredient_list=["sourdough bread", "heirloom tomatoes", "basil", "garlic", "balsamic vinegar", "olive oil"],
         dietary_labels=["vegetarian", "vegan-option"],
@@ -111,7 +89,7 @@ RESTAURANT_MENU_DATABASE: Dict[str, MenuItemModel] = {
         item_code="APP_002",
         dish_name="Crispy Buffalo Wings",
         category_type="appetizer",
-        detailed_description="Double-fried chicken wings tossed in house buffalo sauce, served with celery and blue cheese dip",
+        detailed_description="Double-fried chicken wings tossed in house buffalo sauce with celery and blue cheese dip",
         base_price=13.99,
         ingredient_list=["chicken wings", "buffalo sauce", "butter", "celery", "blue cheese"],
         dietary_labels=["spicy", "gluten-free-option"],
@@ -133,7 +111,6 @@ RESTAURANT_MENU_DATABASE: Dict[str, MenuItemModel] = {
         popularity_rating=8
     ),
     
-    # Main Courses
     "MAIN_001": MenuItemModel(
         item_code="MAIN_001",
         dish_name="Pan-Seared Atlantic Salmon",
@@ -173,7 +150,6 @@ RESTAURANT_MENU_DATABASE: Dict[str, MenuItemModel] = {
         popularity_rating=10
     ),
     
-    # Desserts
     "DESS_001": MenuItemModel(
         item_code="DESS_001",
         dish_name="Molten Chocolate Lava Cake",
@@ -200,7 +176,6 @@ RESTAURANT_MENU_DATABASE: Dict[str, MenuItemModel] = {
         popularity_rating=9
     ),
     
-    # Beverages
     "DRINK_001": MenuItemModel(
         item_code="DRINK_001",
         dish_name="Fresh-Squeezed Lemonade",
@@ -228,13 +203,8 @@ RESTAURANT_MENU_DATABASE: Dict[str, MenuItemModel] = {
     ),
 }
 
-# In-memory order storage
 active_orders_database: Dict[str, Dict[str, Any]] = {}
 
-
-# ============================================================================
-# MCP Tool Functions
-# ============================================================================
 
 @restaurant_service.tool()
 def fetch_menu(category_filter: str = "all") -> List[MenuItemModel] | str:
@@ -246,10 +216,6 @@ def fetch_menu(category_filter: str = "all") -> List[MenuItemModel] | str:
         
     Returns:
         List of menu items or error message
-        
-    Example:
-        fetch_menu("appetizer") -> Returns all appetizer items
-        fetch_menu("all") -> Returns entire menu
     """
     normalized_category = category_filter.lower().strip()
     
@@ -273,17 +239,10 @@ def calculate_order_total(item_codes: List[str]) -> Dict[str, float]:
     Calculate the total cost for a list of menu items including tax.
     
     Args:
-        item_codes: List of menu item codes (e.g., ["MAIN_001", "DRINK_001"])
+        item_codes: List of menu item codes
         
     Returns:
         Dictionary with subtotal, tax, and grand total
-        
-    Raises:
-        ValueError: If an item code is not found in the menu
-        
-    Example:
-        calculate_order_total(["MAIN_001", "DRINK_001"])
-        -> {"subtotal": 31.98, "tax": 3.20, "grand_total": 35.18}
     """
     subtotal = 0.0
     
@@ -318,39 +277,27 @@ def create_new_order(
     
     Args:
         customer_name: Full name of the customer
-        service_location: Table number or delivery location (e.g., "Table 7", "Room 201")
+        service_location: Table number or delivery location
         contact_phone: Customer's phone number
         item_codes: List of menu item codes to order
         customer_email: Optional email for receipt
         
     Returns:
         Dictionary with success status, order ID, and order details
-        
-    Example:
-        create_new_order(
-            "Emma Rodriguez",
-            "Table 15",
-            "555-0123",
-            ["MAIN_001", "DRINK_001"]
-        )
     """
-    # Generate unique order ID
     order_number = len(active_orders_database) + 1
-    order_id = f"ORD-{order_number:05d}"  # Format: ORD-00001
+    order_id = f"ORD-{order_number:05d}"
     
-    # Validate all item codes
     for item_code in item_codes:
         normalized_code = item_code.upper().strip()
         if normalized_code not in RESTAURANT_MENU_DATABASE:
             return {
                 "success": False,
-                "error": f"Invalid menu item: '{item_code}'. Please check the menu and try again."
+                "error": f"Invalid menu item: '{item_code}'. Please check the menu."
             }
     
-    # Calculate totals
     pricing_data = calculate_order_total(item_codes)
     
-    # Create order record
     new_order = {
         "order_id": order_id,
         "customer_name": customer_name,
@@ -365,7 +312,6 @@ def create_new_order(
         "status": "pending"
     }
     
-    # Store order
     active_orders_database[order_id] = new_order
     
     return {
@@ -386,15 +332,11 @@ def send_order_to_kitchen(
     
     Args:
         order_id: The unique order identifier
-        chef_email: Email address of the kitchen/chef (defaults to configured email)
+        chef_email: Email address of the kitchen/chef
         
     Returns:
         Dictionary with success status and details
-        
-    Example:
-        send_order_to_kitchen("ORD-00001")
     """
-    # Validate order exists
     if order_id not in active_orders_database:
         return {
             "success": False,
@@ -403,13 +345,11 @@ def send_order_to_kitchen(
     
     order_data = active_orders_database[order_id]
     
-    # Format order items for email
     items_text = "\n".join([
         f"  • {RESTAURANT_MENU_DATABASE[item_code].dish_name} (Code: {item_code})"
         for item_code in order_data["ordered_items"]
     ])
     
-    # Compose email
     email_subject = f"🔔 NEW ORDER - {order_id} | {order_data['service_location']}"
     
     email_body = f"""
@@ -442,7 +382,6 @@ GRAND TOTAL:     ${order_data['grand_total']:.2f}
 ⚡ Please prepare this order with priority.
     """
     
-    # Send email
     try:
         message = MIMEMultipart()
         message['From'] = SENDER_EMAIL
@@ -454,7 +393,6 @@ GRAND TOTAL:     ${order_data['grand_total']:.2f}
             smtp_server.login(SENDER_EMAIL, SENDER_PASSWORD)
             smtp_server.send_message(message)
         
-        # Update order status
         active_orders_database[order_id]["status"] = "sent_to_kitchen"
         
         return {
@@ -469,7 +407,7 @@ GRAND TOTAL:     ${order_data['grand_total']:.2f}
             "success": False,
             "error": f"Failed to send email: {str(error)}",
             "order_summary": email_body,
-            "note": "Order saved but email notification failed. Please check email configuration."
+            "note": "Order saved but email notification failed."
         }
 
 
@@ -493,18 +431,8 @@ def save_order_to_excel(
         
     Returns:
         Dictionary with success status and file path
-        
-    Example:
-        save_order_to_excel(
-            "ORD-00001",
-            "Emma Rodriguez",
-            "555-0123",
-            "Table 15",
-            ["MAIN_001", "DRINK_001"]
-        )
     """
     try:
-        # Load or create workbook
         if os.path.exists(ORDERS_EXCEL_FILE):
             workbook = openpyxl.load_workbook(ORDERS_EXCEL_FILE)
             worksheet = workbook.active
@@ -513,12 +441,10 @@ def save_order_to_excel(
             worksheet = workbook.active
             worksheet.title = "Orders Log"
             
-            # Create header row
             headers = ["Order ID", "Timestamp", "Customer Name", "Phone Number", 
                        "Location", "Items Ordered", "Total Amount"]
             worksheet.append(headers)
             
-            # Style header row
             header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
             header_font = Font(bold=True, color="FFFFFF", size=11)
             header_alignment = Alignment(horizontal="center", vertical="center")
@@ -528,17 +454,14 @@ def save_order_to_excel(
                 cell.font = header_font
                 cell.alignment = header_alignment
         
-        # Prepare data
         items_display = ", ".join([
             RESTAURANT_MENU_DATABASE[code].dish_name 
             for code in item_codes
         ])
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
-        # Calculate total
         pricing = calculate_order_total(item_codes)
         
-        # Add new row
         new_row = [
             order_id,
             timestamp,
@@ -550,12 +473,10 @@ def save_order_to_excel(
         ]
         worksheet.append(new_row)
         
-        # Adjust column widths
         column_widths = [15, 20, 25, 18, 15, 50, 15]
         for idx, width in enumerate(column_widths, start=1):
             worksheet.column_dimensions[openpyxl.utils.get_column_letter(idx)].width = width
         
-        # Save workbook
         workbook.save(ORDERS_EXCEL_FILE)
         
         return {
@@ -593,10 +514,6 @@ def get_order_status(order_id: str) -> Dict[str, Any]:
         "order": active_orders_database[order_id]
     }
 
-
-# ============================================================================
-# Server Entry Point
-# ============================================================================
 
 if __name__ == "__main__":
     print("🚀 Starting Enhanced Restaurant MCP Server...")
