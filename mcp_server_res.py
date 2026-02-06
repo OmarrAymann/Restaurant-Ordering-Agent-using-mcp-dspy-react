@@ -14,13 +14,11 @@ from pydantic import BaseModel, Field
 load_dotenv()
 
 restaurant_service = FastMCP("RestaurantOrderingService")
-
 SENDER_EMAIL = os.getenv("SENDER_EMAIL")
 SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
-DEFAULT_CHEF_EMAIL = os.getenv("CHEF_EMAIL", "chef@restaurant.com")
-
+restaurant_service = os.getenv("RES_EMAIL", "chef@restaurant.com")
 ORDERS_EXCEL_FILE = "restaurant_orders_log.xlsx"
-TAX_RATE = 0.10
+TAX_RATE = 0.14
 
 
 class MenuItemModel(BaseModel):
@@ -41,38 +39,38 @@ class MenuItemModel(BaseModel):
 RESTAURANT_MENU_DATABASE: Dict[str, MenuItemModel] = {
     "APP_001": MenuItemModel(
         item_code="APP_001",
-        dish_name="Mediterranean Bruschetta",
+        dish_name="Falafel",
         category_type="appetizer",
-        detailed_description="Artisan sourdough topped with heirloom tomatoes, fresh basil, and aged balsamic",
+        detailed_description="Crispy chickpea balls served with tahini sauce and fresh herbs",
         base_price=9.99,
-        ingredient_list=["sourdough bread", "heirloom tomatoes", "basil", "garlic", "balsamic vinegar", "olive oil"],
-        dietary_labels=["vegetarian", "vegan-option"],
+        ingredient_list=["chickpeas", "parsley", "garlic", "onion", "tahini", "spices"],
+        dietary_labels=["vegetarian", "vegan"],
         is_available=True,
         prep_time_minutes=10,
-        popularity_rating=8
+        popularity_rating=9
     ),
     
     "APP_002": MenuItemModel(
         item_code="APP_002",
-        dish_name="Crispy Buffalo Wings",
+        dish_name="Koshari Balls",
         category_type="appetizer",
-        detailed_description="Double-fried chicken wings tossed in house buffalo sauce with celery and blue cheese dip",
+        detailed_description="Mini koshari bites with rice, lentils, pasta, and tomato sauce",
         base_price=13.99,
-        ingredient_list=["chicken wings", "buffalo sauce", "butter", "celery", "blue cheese"],
-        dietary_labels=["spicy", "gluten-free-option"],
+        ingredient_list=["rice", "lentils", "pasta", "tomato sauce", "fried onions"],
+        dietary_labels=["vegetarian", "vegan"],
         is_available=True,
-        prep_time_minutes=18,
-        popularity_rating=9
+        prep_time_minutes=15,
+        popularity_rating=8
     ),
     
     "APP_003": MenuItemModel(
         item_code="APP_003",
-        dish_name="Spinach Artichoke Dip",
+        dish_name="Sambousek",
         category_type="appetizer",
-        detailed_description="Creamy blend of spinach, artichokes, three cheeses, served with tortilla chips",
+        detailed_description="Savory pastry filled with cheese or minced meat, lightly fried",
         base_price=11.49,
-        ingredient_list=["spinach", "artichokes", "cream cheese", "mozzarella", "parmesan", "tortilla chips"],
-        dietary_labels=["vegetarian"],
+        ingredient_list=["flour", "cheese", "minced meat", "onion", "spices"],
+        dietary_labels=["vegetarian-option"],
         is_available=True,
         prep_time_minutes=12,
         popularity_rating=8
@@ -80,12 +78,12 @@ RESTAURANT_MENU_DATABASE: Dict[str, MenuItemModel] = {
     
     "MAIN_001": MenuItemModel(
         item_code="MAIN_001",
-        dish_name="Pan-Seared Atlantic Salmon",
+        dish_name="Grilled Kofta",
         category_type="main",
-        detailed_description="Wild-caught salmon with lemon beurre blanc, roasted asparagus, and herb fingerling potatoes",
+        detailed_description="Seasoned beef and lamb skewers served with rice and vegetables",
         base_price=26.99,
-        ingredient_list=["atlantic salmon", "lemon", "butter", "white wine", "asparagus", "fingerling potatoes", "herbs"],
-        dietary_labels=["gluten-free", "pescatarian"],
+        ingredient_list=["beef", "lamb", "onion", "parsley", "spices", "rice", "vegetables"],
+        dietary_labels=["gluten-free-option"],
         is_available=True,
         prep_time_minutes=25,
         popularity_rating=10
@@ -93,11 +91,11 @@ RESTAURANT_MENU_DATABASE: Dict[str, MenuItemModel] = {
     
     "MAIN_002": MenuItemModel(
         item_code="MAIN_002",
-        dish_name="Classic Fettuccine Alfredo",
+        dish_name="Molokhia with Rabbit",
         category_type="main",
-        detailed_description="Handmade fettuccine in rich parmesan cream sauce with grilled herb chicken breast",
+        detailed_description="Traditional Egyptian molokhia stew served with rice and tender rabbit meat",
         base_price=19.99,
-        ingredient_list=["fettuccine pasta", "chicken breast", "heavy cream", "parmesan", "garlic", "butter"],
+        ingredient_list=["molokhia leaves", "rabbit", "garlic", "coriander", "rice", "spices"],
         dietary_labels=[],
         is_available=True,
         prep_time_minutes=22,
@@ -106,12 +104,12 @@ RESTAURANT_MENU_DATABASE: Dict[str, MenuItemModel] = {
     
     "MAIN_003": MenuItemModel(
         item_code="MAIN_003",
-        dish_name="Angus Ribeye Steak",
+        dish_name="Grilled Hamam (Pigeon)",
         category_type="main",
-        detailed_description="12oz USDA Prime ribeye, garlic mashed potatoes, grilled broccolini, red wine reduction",
+        detailed_description="Stuffed pigeon grilled with Egyptian spices, served with rice",
         base_price=34.99,
-        ingredient_list=["ribeye steak", "potatoes", "butter", "broccolini", "red wine", "shallots"],
-        dietary_labels=["gluten-free"],
+        ingredient_list=["pigeon", "spices", "rice", "onion", "garlic", "herbs"],
+        dietary_labels=["gluten-free-option"],
         is_available=True,
         prep_time_minutes=30,
         popularity_rating=10
@@ -119,11 +117,11 @@ RESTAURANT_MENU_DATABASE: Dict[str, MenuItemModel] = {
     
     "DESS_001": MenuItemModel(
         item_code="DESS_001",
-        dish_name="Molten Chocolate Lava Cake",
+        dish_name="Basbousa",
         category_type="dessert",
-        detailed_description="Warm Belgian chocolate cake with liquid center, vanilla bean ice cream, raspberry coulis",
+        detailed_description="Sweet semolina cake topped with almonds and soaked in syrup",
         base_price=9.99,
-        ingredient_list=["dark chocolate", "flour", "eggs", "butter", "vanilla ice cream", "raspberries"],
+        ingredient_list=["semolina", "sugar", "almonds", "butter", "milk", "syrup"],
         dietary_labels=["vegetarian"],
         is_available=True,
         prep_time_minutes=14,
@@ -132,24 +130,24 @@ RESTAURANT_MENU_DATABASE: Dict[str, MenuItemModel] = {
     
     "DESS_002": MenuItemModel(
         item_code="DESS_002",
-        dish_name="New York Cheesecake",
+        dish_name="Konafa",
         category_type="dessert",
-        detailed_description="Classic creamy cheesecake with graham cracker crust, fresh berry compote",
+        detailed_description="Shredded phyllo pastry layered with sweet cheese or cream, soaked in syrup",
         base_price=8.49,
-        ingredient_list=["cream cheese", "graham crackers", "eggs", "sour cream", "mixed berries"],
+        ingredient_list=["kataifi pastry", "cheese", "cream", "sugar", "syrup"],
         dietary_labels=["vegetarian"],
         is_available=True,
-        prep_time_minutes=8,
+        prep_time_minutes=12,
         popularity_rating=9
     ),
     
     "DRINK_001": MenuItemModel(
         item_code="DRINK_001",
-        dish_name="Fresh-Squeezed Lemonade",
+        dish_name="Karkadeh",
         category_type="drink",
-        detailed_description="House-made lemonade with organic lemons, cane sugar, and fresh mint",
+        detailed_description="Refreshing hibiscus tea served hot or cold",
         base_price=4.99,
-        ingredient_list=["lemons", "cane sugar", "water", "fresh mint"],
+        ingredient_list=["hibiscus petals", "sugar", "water"],
         dietary_labels=["vegan", "vegetarian", "gluten-free"],
         is_available=True,
         prep_time_minutes=5,
@@ -158,17 +156,18 @@ RESTAURANT_MENU_DATABASE: Dict[str, MenuItemModel] = {
     
     "DRINK_002": MenuItemModel(
         item_code="DRINK_002",
-        dish_name="Craft Root Beer Float",
+        dish_name="Sugarcane Juice",
         category_type="drink",
-        detailed_description="Artisan root beer with premium vanilla ice cream",
-        base_price=6.49,
-        ingredient_list=["root beer", "vanilla ice cream"],
-        dietary_labels=["vegetarian"],
+        detailed_description="Freshly pressed sugarcane juice served chilled",
+        base_price=15,
+        ingredient_list=["sugarcane", "ice", "lemon"],
+        dietary_labels=["vegan", "vegetarian", "gluten-free"],
         is_available=True,
         prep_time_minutes=3,
-        popularity_rating=7
+        popularity_rating=9
     ),
 }
+
 
 active_orders_database: Dict[str, Dict[str, Any]] = {}
 
@@ -347,7 +346,7 @@ def save_order_to_excel(
             worksheet.title = "Orders Log"
             
             headers = ["Order ID", "Timestamp", "Customer Name", "Phone Number", 
-                       "Location", "Items Ordered", "Total Amount"]
+                    "Location", "Items Ordered", "Total Amount"]
             worksheet.append(headers)
             
             header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
@@ -404,5 +403,5 @@ def get_order_status(order_id: str) -> Dict[str, Any]:
 
 
 if __name__ == "__main__":
-    print("🚀 Starting Restaurant MCP Server...")
+    print("Starting Restaurant MCP Server...")
     restaurant_service.run()

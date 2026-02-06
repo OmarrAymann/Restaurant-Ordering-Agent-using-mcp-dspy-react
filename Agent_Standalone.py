@@ -85,7 +85,7 @@ RESTAURANT_MENU = {
 }
 
 ORDERS = {}
-TAX_RATE = 0.10
+TAX_RATE = 0.14
 
 
 # ============================================================================
@@ -272,10 +272,10 @@ def main():
                 continue
             
             response = session.process_message(user_input)
-            print(f"\n🤖 Agent: {response}\n")
+            print(f"\n🤖 fat7y: {response}\n")
             
         except KeyboardInterrupt:
-            print("\n\n👋 Session interrupted. Goodbye!\n")
+            print("\n\n Session interrupted. Goodbye!\n")
             break
             
         except Exception as e:
