@@ -1,252 +1,152 @@
-#  Restaurant Ordering Agent  
-**tool-driven conversational system using mcp + dspy react**
+Restaurant Ordering Agent using MCP and DSpy
+System Overview
 
-an interactive restaurant assistant that talks to customers, understands intent, manages orders, notifies the kitchen, and stores everything in structured records.  
-the agent does not guess actions. it calls real tools exposed through the model context protocol.
+The Restaurant Ordering Agent is an AI-powered chatbot designed to guide customers through an Egyptian food menu, take orders, handle customizations, and coordinate with kitchen staff. The system integrates a local Llama 3.2 model for natural language understanding and MCP (Model Context Protocol) to handle backend tools and services.
 
----
+Key Features:
 
-## ✨ what makes this project different
+Conversational ordering with natural language.
 
-- real tool execution via mcp  
-- conversational ordering, not form-based  
-- clear separation between reasoning and actions  
-- email + excel integration out of the box  
-- easy to extend with new tools  
+Egyptian menu items with categories, prices, and descriptions.
 
-no fragile prompts.  
-no hidden logic.
+Real-time order summary and management.
 
----
+Integration with kitchen workflow via MCP tools.
 
-## 🧠 system overview
+Automated email notifications for orders (optional).
 
-this system is composed of two cooperating parts:
+AI Agent
 
-### 🤖 ai agent
-- handles conversation
-- understands customer intent
-- decides which tool to call
-- confirms actions with the user
+The AI agent uses DSpy and Ollama Llama 3.2 for natural language understanding and reasoning.
 
-### 🧩 mcp server
-- exposes restaurant capabilities as tools
-- executes real side effects
-- stays stateless and predictable
+Responsibilities:
 
----
+Interpret customer messages and queries.
 
-## 🏗️ architecture
+Suggest menu items and guide the ordering flow.
 
-┌────────────────────────┐
-│ resAgent.py 🤖 │
-│ dspy react agent │
-│ │
-│ • chat with guest │
-│ • intent detection │
-│ • order reasoning │
-└───────────┬────────────┘
-│ mcp (stdio)
-▼
-┌────────────────────────┐
-│ mcp_server_res.py 🧩 │
-│ fast mcp server │
-│ │
-│ • fetch_menu │
-│ • calculate_total │
-│ • create_order │
-│ • send_to_kitchen │
-│ • save_in_excel │
-└───────────┬────────────┘
+Parse item quantities and dietary requirements.
+
+Maintain conversation history and current order state.
+
+Ask clarifying questions if needed.
+
+Implementation:
+
+RestaurantConversationalAgent defines input (user_input_message) and output (agent_response) schemas.
+
+RestaurantChatbotSession manages session history, orders, and agent interaction.
+
+MCP Server
+
+The MCP Server acts as a bridge between the AI agent and backend services (tools).
+
+Features:
+
+Exposes functions for sending emails, logging orders, or interacting with external services.
+
+Handles CallToolRequest events from the agent.
+
+Runs locally via mcp_server_res.py.
+
+Configuration:
+
+Python executable (sys.executable) is used to launch MCP server.
+
+.env file stores credentials and configuration variables:
+
+SENDER_EMAIL=youremail@example.com
+SENDER_PASSWORD=yourpassword
+CHEF_EMAIL=chef@restaurant.com
+
+Architecture
++---------------------+
+|   Customer          |
+|  (Chat Interface)   |
++----------+----------+
+           |
+           v
++---------------------+
+| AI Conversational   |
+| Agent (Llama 3.2)  |
++----------+----------+
+           |
+           v
++---------------------+
+| MCP Server          |
+| - Email Tool        |
+| - Logging Tool      |
++----------+----------+
+           |
+           v
++---------------------+
+| Kitchen / Database  |
++---------------------+
+
+
+User sends messages → AI agent interprets → MCP server executes tools → Kitchen/log updated.
+
+Sample Menu (Egyptian Cuisine)
+Item Code	Name	Category	Description	Price
+APP_001	Falafel	Appetizer	Crispy chickpea balls with tahini	$9.99
+APP_002	Koshari Balls	Appetizer	Mini koshari bites with rice, lentils, pasta, sauce	$13.99
+MAIN_001	Grilled Kofta	Main	Beef & lamb skewers with rice & vegetables	$26.99
+MAIN_002	Molokhia with Rabbit	Main	Traditional molokhia stew with rice	$19.99
+MAIN_003	Grilled Hamam (Pigeon)	Main	Stuffed pigeon grilled with Egyptian spices	$34.99
+DESS_001	Basbousa	Dessert	Sweet semolina cake with almonds & syrup	$9.99
+DRINK_001	Karkadeh	Drink	Refreshing hibiscus tea served hot or cold	$4.99
+MCP Tools
+
+The system uses MCP tools to automate backend actions:
+
+Email Notification Tool: Sends completed orders to the chef.
+
+Order Logging Tool: Records orders in restaurant_orders_log.xlsx.
+
+Menu Query Tool: Provides menu information on request.
+
+Custom Tool Integration: Additional tools can be added to support payments, delivery, or analytics.
+
+Project Structure
+Restaurant-Ordering-Agent-using-mcp-dspy-react/
 │
-┌────────┼─────────┐
-▼ ▼ ▼
-📧 email 📊 excel 🍔 menu
-kitchen orders database
+├─ Agent.py                  # Main chatbot interface
+├─ mcp_server_res.py         # MCP server backend
+├─ Requirements.txt          # Python dependencies
+├─ .env                      # Environment variables (email credentials)
+├─ restaurant_menu.py        # Menu definition and item models
+├─ test.py                   # Test scripts and examples
+└─ README.md                 # Project documentation
 
+Getting Started
 
----
+Install Dependencies
 
-## 🍔 sample menu
+pip install -r Requirements.txt
 
-| category | item | price |
-|-------|------|------|
-| appetizer | garlic bread | 6.50 |
-| appetizer | spicy chicken bites | 11.75 |
-| main | beef burger deluxe | 17.99 |
-| main | shrimp alfredo | 21.50 |
-| dessert | vanilla cheesecake | 7.25 |
-| drink | iced peach tea | 3.99 |
 
-menu lives in memory and is easy to extend.
+Setup Environment Variables
+Create a .env file with the required credentials:
 
----
+SENDER_EMAIL=youremail@example.com
+SENDER_PASSWORD=yourpassword
+CHEF_EMAIL=chef@restaurant.com
 
-## 🛠️ mcp tools
 
-| tool | responsibility |
-|----|---------------|
-| fetch_menu | return menu items by category |
-| calculate_total | compute subtotal tax and final total |
-| create_order | generate structured order object |
-| send_to_kitchen | notify kitchen by email |
-| save_in_excel | persist order in excel file |
+Start MCP Server
 
-each tool has a single responsibility.
+python3 mcp_server_res.py
 
----
 
-## 🗣️ agent abilities
+Run Chatbot
 
-- understands natural conversation  
-- walks users through menu choices  
-- supports order edits and special requests  
-- collects guest details naturally  
-- confirms before final submission  
-- triggers real actions only when approved  
+python3 Agent.py
 
-the agent never writes files or sends emails directly.  
-tools do.
 
----
+Interact with Chatbot
 
-## 🚀 getting started
+Type 'menu' to view menu.
 
-### requirements
+Type orders naturally: "I want 2 Falafel and 1 Basbousa".
 
-- python 3.10+
-- gmail account for kitchen notifications
-- llm api key
-
----
-
-### installation
-
-pip install dspy mcp openpyxl pydantic python-dotenv
-
-
----
-
-### environment setup
-
-create a `.env` file:
-
-GEMINI_API_KEY=your_api_key
-SENDER_EMAIL=kitchen.bot@gmail.com
-SENDER_PASSWORD=your_app_password
-
-
-gmail requires app passwords with 2fa enabled.
-
----
-
-## ▶️ run the chatbot
-
-cd Resturant
-python resAgent.py
-
-
-you will enter an interactive chat session.
-
----
-
-## 💬 example conversation
-
-you: hey, can i see what you serve
-agent: sure! we have appetizers, main dishes, desserts, and drinks.
-would you like to start with something specific?
-
-you: i want a burger and iced tea
-agent: great choice 👍
-beef burger deluxe 17.99
-iced peach tea 3.99
-may i have your name and table number?
-
-you: lina, table 3, phone 0102223344
-agent: perfect lina 👌
-subtotal 21.98
-tax 2.20
-total 24.18
-should i send this to the kitchen?
-
-you: yes
-agent: order confirmed 🍽️
-the kitchen has been notified.
-
-
----
-
-## 📁 project structure
-
-Resturant/
-├── mcp_server_res.py # restaurant tools
-├── resAgent.py # conversational agent
-├── orders.xlsx # generated order log
-├── .env # environment variables
-└── README.md
-
-
----
-
-## 🧭 agent state machine
-
-the agent tracks progress explicitly
-
-| state | purpose |
-|----|-------|
-| greet | welcome message |
-| view_menu | menu exploration |
-| place_order | selecting items |
-| modify_order | changing selections |
-| provide_info | collecting guest data |
-| confirm_order | final confirmation |
-| finalized | order sent |
-| cancel | flow aborted |
-
-this prevents broken conversations.
-
----
-
-## 📊 excel audit trail
-
-each order is saved with:
-
-- order id  
-- timestamp  
-- guest name  
-- phone  
-- table or location  
-- ordered items  
-
-simple. readable. auditable.
-
----
-
-## 🔧 customization ideas
-
-- add dietary filters  
-- connect to a real database  
-- integrate payment flow  
-- add voice ordering  
-- add multi-agent kitchen routing  
-
-the mcp boundary makes this easy.
-
----
-
-## 🧪 development notes
-
-you can run the mcp server alone:
-
-python mcp_server_res.py
-
-
-you can swap llm providers inside `resAgent.py`:
-
-- gemini
-- claude
-- openai
-
-no architecture changes needed.
-
----
+Type 'quit' to exit.
